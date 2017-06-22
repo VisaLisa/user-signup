@@ -1,88 +1,81 @@
+#!/usr/bin/env python
+
+__author__ = "student"
+__version__ = "1.0"
+# June 20, 2017
+# Flask User Sign-up re: LaunchCode
+# Rubric: http://education.launchcode.org/web-fundamentals/assignments/user-signup/
+
+
 from flask import Flask, request, redirect, render_template
-import cgi
-import os
+import re
 
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
 
-@app.route("/")
+
+@app.route('/', methods=['POST', 'GET'])
 def index():
-    return render_template('newuser-signup.html')
 
-
-@app.route('/newuser-signup', methods=['POST'])
-def validate_inputs():
-
-    username = request.form['username']
-    password = request.form['password']
-    verify = request.form['verify']
-    email = request.form['email']
-
+    username = ''
+    email = ''
     username_error = ''
     password_error = ''
-    verify_error = ''
+    verify_password_error = ''
     email_error = ''
+    title = 'Signup'
 
-#validate username
-    for i in username:
-        if i.isspace():
-            username_error = 'Username must not contain spaces.'
+    if request.method == 'POST':
 
-        else:
-            username = str(username)
-            if len(username) < 3 or len(username) > 20:
-                username_error = 'Username must be 3-20 characters'
+        username = request.form['username']
+        password = request.form['password']
+        verify_password = request.form['verify_password']
+        email = request.form['email']
 
+        for i in username:
+            if i.isspace():
+                username_error = 'Username must not contain spaces.'
+                username = ''
+            else:
+                if (len(username) < 3) or (len(username) > 20):
+                    username_error = 'Username must be 3-20 characters'
+                    username = ''
 
-    if not len(username):
-        username_error = 'Not a valid username'
+        if not username:
+            username_error = 'Not a valid username'
+            username = ''
 
-#validate passwords
-    for i in password:
-        if i.isspace():
-            password_error = 'Password must not contain spaces.'
-            password = ''
-        else:
-            password = str(password)
-            if len(password) < 3 or len(password) > 20:
-                password_error = 'Password must be 3-20 characters and not contain spaces.'
-                password = ''
-    if password != verify:
-        verify_error = 'Passwords do not match'
-        verify = ''
-        password = ''
+        for i in password:
+            if i.isspace():
+                password_error = 'Password must not contain spaces.'
+            else:
+                if (len(password) < 3) or (len(password) > 20):
+                    password_error = 'Password must be 3-20 characters and not contain spaces.'
+        if not len(password):
+            password_error = 'Not a valid password'
 
-    if not len(password):
-        password_error = 'Not a valid password'
+        if password != verify_password:
+            verify_password_error = 'Passwords do not match'
 
-
-#validate email
-    for i in email:
-        if i.isspace():
+        if (email != '') and (not re.match('^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email)):
             email_error = 'This is not a valid email'
-            if len(email) < 3 or len(email) > 20:
-                email_error = 'Email must be 3-20 characters'
-        else:
-            email = str(email)
-            if "@" not in email:
-                email_error = 'This is not a valid email'
+            email = ''
 
-            if "." not in email:
-                email_error = 'This is not a valid email'
+        if (not username_error) and (not password_error) and (not verify_password_error) and (not email_error):
+            return redirect('/confirmation?username={0}'.format(username))
 
-#redirect to welcome page
-    if not username_error and not password_error and not verify_error and not email_error:
-        return redirect('/confirmation?username={0}'.format(username))
-    else:
-        return render_template('newuser-signup.html', username_error=username_error,
-            password_error=password_error,
-            verify_error=verify_error, email_error=email_error,
-            username=username, password=password,verify=verify, email=email)
+    return render_template('new_user_signup.html', title=title, username=username, email=email,
+                           username_error=username_error, password_error=password_error,
+                           verify_password_error=verify_password_error, email_error=email_error)
+
 
 @app.route('/confirmation')
-def welcome():
-    username=request.args.get('username')
-    return render_template('confirmation.html', username=username)
+def confirmation():
+    title = "Welcome!"
+    username = request.args.get('username')
+    return render_template('confirmation.html', title=title, username=username)
 
-app.run()
+
+if __name__ == '__main__':
+    app.run()
